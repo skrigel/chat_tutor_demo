@@ -12,11 +12,11 @@ const planSteps = [
   "At the end, print how many cards are in your collection.",
 ];
 
-const pokemonCode = `collection = []
-
-pikachu = {"name": "Pikachu", "rarity": "Common", "price": 2.50}
+const pokemonCode = `pikachu = {"name": "Pikachu", "rarity": "Common", "price": 2.50}
 charizard = {"name": "Charizard", "rarity": "Ultra Rare", "price": 150.0}
 eevee = {"name": "Eevee", "rarity": "Uncommon", "price": 5.0}
+
+collection = []
 
 collection.append(pikachu)
 collection.append(charizard)
@@ -28,41 +28,46 @@ for card in collection:
 print("You have", len(collection), "cards in your collection.")`;
 
 const executionTrace = [
-  {
+    {
     line: 1,
-    locals: { collection: "[]" },
-    hint:
-      "You create an empty list called collection. This will hold all of your Pokémon cards.",
-  },
-  {
-    line: 3,
     locals: {
-      collection: "[]",
       pikachu: "{name:'Pikachu', rarity:'Common', price:2.50}",
     },
     hint:
       "You define a dictionary for Pikachu with name, rarity, and price.",
+    step: 1,
   },
   {
-    line: 4,
+    line: 2,
     locals: {
-      collection: "[]",
       pikachu: "{...}",
       charizard: "{name:'Charizard', rarity:'Ultra Rare', price:150.0}",
     },
     hint:
       "You define a dictionary for Charizard. Notice it has a much higher price.",
+    step: 1,
   },
   {
-    line: 5,
+    line: 3,
     locals: {
-      collection: "[]",
       pikachu: "{...}",
       charizard: "{...}",
       eevee: "{name:'Eevee', rarity:'Uncommon', price:5.0}",
     },
     hint:
       "You define a dictionary for Eevee, another card in your collection.",
+    step: 1,
+  },
+  {
+    line: 5,
+    locals: { collection: "[]" ,
+      pikachu: "{...}",
+      charizard: "{...}",
+      eevee: "{...}",
+    },
+    hint:
+      "You create an empty list called collection. This will hold all of your Pokémon cards.",
+    step: 2,
   },
   {
     line: 7,
@@ -74,6 +79,7 @@ const executionTrace = [
     },
     hint:
       "You append Pikachu to collection. Now the list has 1 card.",
+    step: 3,
   },
   {
     line: 8,
@@ -85,6 +91,7 @@ const executionTrace = [
     },
     hint:
       "You append Charizard to collection. Now there are 2 cards.",
+    step: 3,
   },
   {
     line: 9,
@@ -96,48 +103,62 @@ const executionTrace = [
     },
     hint:
       "You append Eevee to collection. Now the list has all 3 cards.",
+    step: 3,
   },
   {
-    line: 11,
+    line: 12,
     locals: {
       collection: "[…3 cards…]",
       card: "pikachu {...}",
     },
     hint:
       "The loop starts. On this iteration, card refers to the Pikachu dictionary.",
+      step: 4,
   },
   {
-    line: 11,
+    line: 12,
     locals: {
       collection: "[…3 cards…]",
       card: "charizard {...}",
     },
     hint:
       "Second loop iteration: now card refers to Charizard.",
+      step: 4,
   },
   {
-    line: 11,
+    line: 12,
     locals: {
       collection: "[…3 cards…]",
       card: "eevee {...}",
     },
     hint:
       "Third loop iteration: now card refers to Eevee.",
+      step: 4,
   },
   {
-    line: 13,
+    line: 14,
     locals: {
       collection: "[…3 cards…]",
     },
     hint:
       "You print the total number of cards using len(collection).",
+      step: 5,
   },
 ];
-
-const programOutput = `Pikachu - Common - $ 2.5
+const programOutput = {
+  0: "",
+  1: `Pikachu - Common - $ 2.5`,
+  2: `Pikachu - Common - $ 2.5
+Charizard - Ultra Rare - $ 150.0`,
+  3: `Pikachu - Common - $ 2.5
+Charizard - Ultra Rare - $ 150.0
+Eevee - Uncommon - $ 5.0`,
+  4: `Pikachu - Common - $ 2.5
 Charizard - Ultra Rare - $ 150.0
 Eevee - Uncommon - $ 5.0
-You have 3 cards in your collection.`;
+You have 3 cards in your collection.`,
+}
+
 
 function App() {
   const [planIndex, setPlanIndex] = useState(0);
@@ -152,12 +173,25 @@ function App() {
   );
 
   const goNext = () => {
-    setPlanIndex((i) => Math.min(i + 1, planSteps.length - 1));
+
+    if (traceIndex < executionTrace.length-1) {
+      const currStep  = executionTrace[traceIndex].step;
+      const nextStep = executionTrace[traceIndex + 1].step;
+      if (currStep < nextStep) {
+        setPlanIndex((i) => Math.min(i + 1, planSteps.length - 1));
+      }
+    }
     setTraceIndex((i) => Math.min(i + 1, executionTrace.length - 1));
   };
 
   const goPrev = () => {
-    setPlanIndex((i) => Math.max(i - 1, 0));
+    if (traceIndex > 0) {
+      const currStep  = executionTrace[traceIndex].step;
+      const nextStep = executionTrace[traceIndex - 1].step;
+      if (currStep > nextStep) {
+        setPlanIndex((i) => Math.max(i - 1, 0));
+      }
+    }
     setTraceIndex((i) => Math.max(i - 1, 0));
   };
 
@@ -201,7 +235,7 @@ function App() {
           </div>
 
           <div className="controls">
-            <button onClick={goPrev} disabled={planIndex === 0}>
+            <button onClick={goPrev} disabled={traceIndex === 0}>
               ◀ Previous
             </button>
             <button onClick={goNext} disabled={planIndex === planSteps.length - 1}>
@@ -280,7 +314,7 @@ function App() {
           </div>
 
           <h3>Program Output</h3>
-          <pre className="output-block">{programOutput}</pre>
+          {traceIndex > 6 ? <pre className="output-block">{programOutput[traceIndex-6]}</pre> : <pre className="output-block">{programOutput[0]}</pre>}
 
           <p className="hint">
             This panel stays “lower level,” while the middle panel reveals the student&apos;s code
